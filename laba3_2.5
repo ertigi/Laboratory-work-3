@@ -1,0 +1,110 @@
+//Отсортировать массив чисел «змейкой» по вертикали
+#define _CRT_SECURE_NO_WARNINGS
+#include "stdio.h"
+#include "stdlib.h"
+
+int main()
+{
+	int *arr;
+	int q, m1, i, j, N = 1, M = 0, c = 0;
+	int ch = 0;
+
+	FILE *file_in;
+	FILE *file_out;
+
+	//вычисление размера массива 
+	file_in = fopen("input.txt", "r");
+	while ((ch = fgetc(file_in)) != EOF)
+	{
+		if (ch == 32){
+			c = 0;
+		}
+		if (ch == 10) {
+			if (N > 1) {
+				if (m1 != M) {
+					printf("ERROR\n");
+					exit(1);
+				}
+			}
+			N++;
+			m1 = M;
+			M = 0;
+			c = 0;
+		}
+		if (ch > 47 & ch < 58){
+			if (c != 0)
+				continue;
+			c++;
+			M++;
+		}
+	}
+	fclose(file_in);
+
+	//создание массива
+	arr = (int*)malloc((N*M) * sizeof(int));
+
+	//заполнение массива
+	file_in = fopen("input.txt", "r");
+	for (i = 0; i < (N*M); i++){
+			fscanf(file_in, "%d", &arr[i]);
+	}
+	fclose(file_in);
+	
+	//сортировка
+	for (i = 0; i < (N*M); i++)
+	{
+		for (j = 0; j < ((N*M) - (i+1)); j++)
+		{
+			if (arr[j] > arr[j + 1])
+			{
+				q = arr[j];
+				arr[j] = arr[j + 1];
+				arr[j + 1] = q;
+			}
+
+		}
+	}
+
+	// змейка 1
+	file_out = fopen("output.txt", "w");
+	for (i = 0; i < N; i++)
+	{
+		if (i % 2 == 0) 
+		{
+			for (j = 0; j < M; j++)
+			{
+				fprintf(file_out, "%4.0d", arr[i*M + j]);
+			}
+		}
+		else
+		{
+			for (j = M; j > 0; j--)
+			{
+				fprintf(file_out, "%4.0d", arr[i*M + j-1]);
+			}
+		}
+		fprintf(file_out, "\n");
+	} fprintf(file_out, "\n");
+	fclose(file_out); 
+
+	// змейка 2
+	file_out = fopen("output.txt", "a");
+	for (i = 0; i < N; i++)
+	{
+		for (j = 0; j < M; j++)
+		{
+			if (j % 2 == 0)
+			{
+				fprintf(file_out, "%4.0d", arr[(j * N) + (i)]);
+			}
+			else
+			{
+				fprintf(file_out, "%4.0d", arr[(j + 1) * N - (i + 1)]);
+			}
+		}
+		fprintf(file_out, "\n");
+	} fprintf(file_out, "\n");
+	fclose(file_out);
+
+	exit(1);
+}

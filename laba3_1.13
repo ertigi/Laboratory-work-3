@@ -1,0 +1,54 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include "stdio.h"
+
+#define N 7
+#define M 3
+
+int main()
+{
+	FILE *fl;
+
+	int **arr;
+	int i, j, q;
+
+	arr = (int**)malloc(N * sizeof(int));
+	for (i = 0; i < N; i++)
+		arr[i] = (int*)malloc(M * sizeof(int));
+
+	fl = fopen("input.txt", "r");
+	for (i = 0; i < N; i++)
+	{
+		for (j = 0; j < M; j++)
+		{
+			fscanf(fl, "%d", &arr[i][j]);
+		}
+	}
+	fclose(fl);
+
+	for (q = 0; q < N; q++)
+	{
+		for (i = 0; i < (N - 1); i++)
+		{
+			if (arr[i][0] < arr[i + 1][0])
+			{
+				for (j = 0; j < M; j++)
+				{
+					int c = arr[i][j];
+					arr[i][j] = arr[i + 1][j];
+					arr[i + 1][j] = c;
+				}
+			}
+		}
+	}
+
+	fl = fopen("output.txt", "w");
+	for (i = 0; i < N; i++)
+	{
+		for (j = 0; j < M; j++)
+		{
+			fprintf(fl, "%d", arr[i][j]);
+		}
+		fprintf(fl, "\n");
+	}
+	fclose(fl);
+}

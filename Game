@@ -3,40 +3,42 @@
 #include "time.h"
 
 //размеры поля 
-#define N 100 
-#define M 100
+#define N 500
+#define M 700
+//количество ходов
+#define STEP 10000
 //еда
 	//количество еды ( в процентах )
-	#define AMT_FOOD	10
+	#define AMT_FOOD 1
 	//количество хп еды
-	#define HP_FOOD		10
-	#define RATE_FOOD	1
+	#define HP_FOOD	10
+	#define RATE_FOOD 1
 	//частота появления ( в ходах )
-	#define TIME_FOOD	10
+	#define TIME_FOOD 12
 	//прибавка к хп
-	#define INC_HP		10
+	#define INC_HP 10
 
 //голуби
 	//количество голубей ( в процентах )
-	#define AMT_DOVE	10
+	#define AMT_DOVE 10
 	//количество расходуемой еды за ход
-	#define RATE_DOVE	1
+	#define RATE_DOVE 1
 	//начальное количество хп
-	#define HP_DOVE		30
+	#define HP_DOVE	20
 
 //ястребы
 	//количество ястребов
-	#define AMT_HAWK	10
+	#define AMT_HAWK 10
 	//количество расходуемой еды за ход
-	#define RATE_HAWK	1
+	#define RATE_HAWK 1
 	//начальное количество хп
-	#define HP_HAWK		30
+	#define HP_HAWK	20
+	//урон
+	#define DAMAGE 1
 
 typedef struct
 {
-	int //x,
-		//y,
-		type,
+	int type,
 		hp,
 		step;
 }unit;
@@ -44,24 +46,36 @@ typedef struct
 typedef struct
 {
 	int dove,
-		hawk;
+		hawk,
+		food;
 }result_move;
 
-void set_food(unit **arr)	//еда
+int set_food(unit **arr)	//еда
 {
 	int i, j;
 	int t = time(NULL);
-
 	int amt_food = ((N*M) / 100) * AMT_FOOD;
-
 	for (int c = 0; c < amt_food; c++)
 	{
 		i = rand(t - c) % N;
 		j = rand(t + c) % M;
 
-		arr[i][j].hp = HP_FOOD;
-		arr[i][j].type = 3;
+		if (arr[i][j].type == 0)
+		{
+			arr[i][j].hp = HP_FOOD;
+			arr[i][j].type = 3;
+		}
+		else if (arr[i][j].type == 3)
+		{
+			arr[i][j].hp = HP_FOOD;
+			arr[i][j].type = 3;
+		}
+		else
+		{
+			arr[i][j].hp += HP_FOOD;
+		}
 	}
+	return amt_food;
 }
 int set_dove(unit **arr)
 {
@@ -105,8 +119,8 @@ int set_hawk(unit **arr)
 		c1 = 0;
 		while (c1 == 0)
 		{
-			i = rand(t - c) % N;
-			j = rand(t + c) % M;
+			i = rand(t - c - c2) % N;
+			j = rand(t + c - c2) % M;
 			if (arr[i][j].type == 0)
 			{
 				arr[i][j].hp = HP_HAWK;
@@ -123,29 +137,30 @@ result_move move_unit(unit **arr, int i, int j)
 {
 	int x = i, y = j,
 		r, c;
-	result_move rmove = {0,0};
+	result_move rmove = {0,0,0};
 	srand(time(NULL));
 	r = rand() % 6;
 
 	for (c = 0; c < 5; c++)
 	{
+		x = i, y = j;
 		if (r == 0) { //up
 			if (x == 0)
-				x = N - 1;
+				x = (N - 1);
 			else
-				x++;
+				x--;
 		}
 		if (r == 3) {//down
 			if (x == (N - 1))
 				x = 0;
 			else
-				x--;
+				x++;
 		}
 		if (r == 1) {//right up
 			if (y % 2 == 0)
 			{
 				if (x == 0)
-					x = N;
+					x = (N - 1);
 				else
 					x--;
 				if (y == (M - 1))
@@ -187,7 +202,7 @@ result_move move_unit(unit **arr, int i, int j)
 			if (y % 2 == 0)
 			{
 				if (y == 0)
-					y = M - 1;
+					y = (M - 1);
 				else
 					y--;
 			}
@@ -218,13 +233,17 @@ result_move move_unit(unit **arr, int i, int j)
 			}
 		}
 
-		arr[i][j].hp -= 1;
+		if (arr[i][j].type == 1)
+			arr[i][j].hp -= RATE_DOVE;
+		else
+			arr[i][j].hp -= RATE_HAWK;
+
 		if (arr[i][j].hp == 0)
 		{
 			if (arr[i][j].type == 1)
 				rmove.dove = 1;
 			else
-				rmove.hawk = 0;
+				rmove.hawk = 1;
 
 			arr[i][j].hp = 0;
 			arr[i][j].step = 0;
@@ -232,6 +251,10 @@ result_move move_unit(unit **arr, int i, int j)
 			return rmove;
 		}
 
+		if (x == i && y == j)
+		{
+			return rmove;
+		}
 
 		if (arr[i][j].type == 1)
 		{
@@ -250,6 +273,7 @@ result_move move_unit(unit **arr, int i, int j)
 				arr[i][j].hp = 0;
 				arr[i][j].step = 0;
 				arr[i][j].type = 0;
+				rmove.food = 1;
 				return rmove;
 			}
 			else
@@ -277,72 +301,42 @@ result_move move_unit(unit **arr, int i, int j)
 				arr[i][j].hp = 0;
 				arr[i][j].step = 0;
 				arr[i][j].type = 0;
+				rmove.food = 1;
 				return rmove;
 			}
 			else
 			{
-				if (arr[x][y].type == 1)
+				arr[x][y].hp -= DAMAGE;
+				if(arr[x][y].hp <= 0)
 				{
+					if (arr[i][j].type == 1)
+						rmove.dove = 1;
+					else
+						rmove.hawk = 1;
 					arr[i][j].hp += INC_HP;
 					arr[x][y] = arr[i][j];
 					arr[i][j].hp = 0;
 					arr[i][j].step = 0;
-					arr[i][j].type = 0;
-					rmove.dove = 1;
+					arr[i][j].type = 0; 
 					return rmove;
 				}
-				else
-				{
-					if (arr[i][j].hp > arr[x][y].hp)
-					{
-						arr[i][j].hp = (arr[i][j].hp - arr[x][y].hp) + INC_HP;
-						arr[x][y] = arr[i][j];
-						arr[i][j].hp = 0;
-						arr[i][j].step = 0;
-						arr[i][j].type = 0;
-						rmove.hawk = 1;
-						return rmove;
-					}
-					else if (arr[i][j].hp < arr[x][y].hp)
-					{
-						arr[x][y].hp = (arr[x][y].hp - arr[i][j].hp) + INC_HP;
-						arr[i][j].hp = 0;
-						arr[i][j].step = 0;
-						arr[i][j].type = 0;
-						rmove.hawk = 1;
-						return rmove;
-					}
-					else
-					{
-						arr[i][j].hp = 0;
-						arr[i][j].step = 0;
-						arr[i][j].type = 0;
-
-						arr[x][y].hp = 0;
-						arr[x][y].step = 0;
-						arr[x][y].type = 0;
-						rmove.hawk = 2;
-						return rmove;
-					}
-				}
+				return rmove;
 			}
 		}
-
 	}
-
+	return rmove;
 }
 
 
 int main()
 {
-	int i, j, z,
+	int i, j,
 		c_hawk = 0,
 		c_dove = 0, 
 		c_food = 0,
 		n_step = 1;
 
-	result_move rmove = { 0 , 0 };
-
+	result_move rmove = { 0 , 0 , 0};
 	//выделение памяти для поля и заполнение его нулями
 	unit **p_field;
 	p_field = (unit**)malloc(N * sizeof(unit));
@@ -357,39 +351,70 @@ int main()
 		}
 	}
 	//растановка юнитов
-	set_food(p_field);
+	c_food = set_food(p_field);
 	c_dove = set_dove(p_field);
 	c_hawk = set_hawk(p_field);
 
+	printf("Step - 0\tFood - %d\tDove - %d\tHawk - %d\n", c_food, c_dove, c_hawk);
 	while (c_dove != 0 && c_hawk != 0)
 	{
 		for (i = 0; i < N; i++)
 		{
 			for (j = 0; j < M; j++)
 			{
-				if (p_field[i][j].type == 0)	//пустая ячейка
-					continue;
+				rmove.dove = 0;
+				rmove.food = 0;
+				rmove.hawk = 0;
 				if (p_field[i][j].type == 3)	//еда
 				{
 					p_field[i][j].hp -= RATE_FOOD;
-					continue;
+					if (p_field[i][j].hp == 0)
+					{
+						p_field[i][j].hp = 0;
+						p_field[i][j].step = 0;
+						p_field[i][j].type = 0;
+						rmove.food = 1;
+					}
 				}
-				if (p_field[i][j].type == 1)	//голубь
+				else if (p_field[i][j].type == 0)
 				{
-					p_field[i][j].step = n_step;
-					rmove = move_unit(p_field, i, j);
-				}
-				if (p_field[i][j].type == 2)	//ястреб
-				{
-					p_field[i][j].step = n_step;
-					rmove = move_unit(p_field, i, j);
-				}
-			}
-		}
-		printf("Step - %d\tFood - %d\tDove - %d\tHawk - %d\n", n_step, c_food, c_dove, c_hawk);
-		c_dove -= rmove.dove;
-		c_hawk -= rmove.hawk;
-		n_step++;
 
+				}
+				else
+				{
+					if (p_field[i][j].step != n_step)
+					{
+						p_field[i][j].step = n_step;
+						rmove = move_unit(p_field, i, j);
+					}
+				}
+				c_food -= rmove.food;
+				c_dove -= rmove.dove;
+				c_hawk -= rmove.hawk;
+				//printf("Step - %d\tFood - %d\tDove - %d\tHawk - %d\t[%d][%d]\n", n_step, c_food, c_dove, c_hawk, i, j);
+				if (c_dove <= 0 || c_hawk <= 0)
+					break;
+			}
+			if (c_dove <= 0 || c_hawk <= 0)
+				break;
+		}
+		if (c_dove <= 0 || c_hawk <= 0)
+			break;
+
+		printf("Step - %d\tFood - %d\tDove - %d\tHawk - %d\n", n_step, c_food, c_dove, c_hawk);
+		if (n_step % TIME_FOOD == 0)
+		{
+			c_food = set_food(p_field);
+		}
+		if (n_step == STEP)
+		{
+			free(p_field);
+			exit(1);
+		}
+		n_step++;
 	}
+	printf("end game\n");
+	printf("Step - %d\tFood - %d\tDove - %d\tHawk - %d\n", n_step, c_food, c_dove, c_hawk);
+	free(p_field);
+	exit(1);
 }
